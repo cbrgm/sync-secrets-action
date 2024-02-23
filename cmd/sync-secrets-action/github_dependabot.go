@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v59/github"
 )
 
-// GitHubDependabotSecrets for GitHub Dependabot secrets management
+// GitHubDependabotSecrets for GitHub Dependabot secrets management.
 type GitHubDependabotSecrets interface {
 	PutDependabotSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error
 	GetDependabotPublicKey(ctx context.Context, owner, repo string) (*github.PublicKey, *github.Response, error)
