@@ -1,5 +1,5 @@
 name: 'Sync Secrets Action'
-description: 'Sync repository secrets and variables between multiple GitHub repositories'
+description: 'Sync Repository, Dependabot and Codespaces secrets + variables between GitHub repositories'
 author: 'cbrgm'
 
 inputs:
