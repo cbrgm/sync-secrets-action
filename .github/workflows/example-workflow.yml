@@ -1,0 +1,23 @@
+name: Sync Secrets Across Repositories
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-secrets-across-repos:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: ['cbrgm/actions-test']
+    steps:
+      - name: Sync Secrets to ${{ matrix.target }}
+        uses: cbrgm/sync-secrets-action@main
+        with:
+          github-token: ${{ secrets.BOT_PAT_TOKEN }}
+          target: ${{ matrix.target }}
+          secrets: |
+            GLOBAL_SECRET=thisisnotasecret
+          variables: |
+            GLOBAL_VAR=globalvarvalue
+          prune: true
+

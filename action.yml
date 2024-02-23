@@ -1,0 +1,67 @@
+name: 'Sync Secrets Action'
+description: 'Sync repository secrets and variables between multiple GitHub repositories'
+author: 'cbrgm'
+
+inputs:
+  github-token:
+    description: 'The GitHub token to use.'
+    required: true
+  target:
+    description: 'The repository to sync secrets and variables to.'
+    required: true
+  secrets:
+    description: 'Secrets to sync.'
+    required: false
+  variables:
+    description: 'Variables to sync.'
+    required: false
+  rate-limit:
+    description: 'Enables rate limit checking.'
+    default: "false"
+    required: false
+  max-retries:
+    description: 'Maximum number of retries when hitting rate limits.'
+    default: "3"
+    required: false
+  dry-run:
+    description: 'Dry run. If true, no changes will be made.'
+    default: "false"
+    required: false
+  prune:
+    description: 'Prunes all existing secrets and variables not in the subset of existing ones and ones defined in this action.'
+    default: "false"
+    required: false
+  environment:
+    description: 'The GitHub environment to sync variables or secrets to.'
+    required: false
+  type:
+    description: 'Type of the secrets to manage: actions, dependabot, or codespaces.'
+    default: "actions"
+    required: false
+
+runs:
+  using: 'docker'
+  image: 'docker://ghcr.io/cbrgm/sync-secrets-action:v1'
+  args:
+    - --github-token
+    - ${{ inputs.github-token }}
+    - --target
+    - ${{ inputs.target }}
+    - --secrets
+    - ${{ inputs.secrets }}
+    - --variables
+    - ${{ inputs.variables }}
+    - --rate-limit
+    - ${{ inputs.rate-limit }}
+    - --max-retries
+    - ${{ inputs.max-retries }}
+    - --dry-run=${{ inputs.dry-run }}
+    - --prune=${{ inputs.prune }}
+    - --environment
+    - ${{ inputs.environment }}
+    - --type
+    - ${{ inputs.type }}
+
+branding:
+  icon: 'lock'
+  color: 'green'
