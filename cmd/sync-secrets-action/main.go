@@ -11,14 +11,18 @@ import (
 	"github.com/alexflint/go-arg"
 )
 
-// Global variables for application metadata.
 var (
-	Version   string              // Version of the application.
-	Revision  string              // Revision or Commit this binary was built from.
-	GoVersion = runtime.Version() // GoVersion running this binary.
-	StartTime = time.Now()        // StartTime of the application.
+	// Version of the application.
+	Version string
+	// Revision or Commit this binary was built from.
+	Revision string
+	// GoVersion running this binary.
+	GoVersion = runtime.Version()
+	// StartTime of the application.
+	StartTime = time.Now()
 )
 
+// EnvArgs holds command-line arguments and environment variables for configuring the application.
 type EnvArgs struct {
 	TargetRepo  string `arg:"--target,env:TARGET"`
 	GithubToken string `arg:"--github-token,env:GITHUB_TOKEN,required"`
@@ -38,6 +42,7 @@ func (EnvArgs) Version() string {
 	return fmt.Sprintf("Version: %s %s\nBuildTime: %s\n%s\n", Revision, Version, StartTime.Format("2006-01-02"), GoVersion)
 }
 
+// TargetType defines the type of target for secret synchronization.
 type TargetType string
 
 const (
@@ -46,14 +51,15 @@ const (
 	Codespaces TargetType = "codespaces"
 )
 
+// main is the entry point of the application. It parses input arguments and orchestrates the synchronization process.
 func main() {
 	var args EnvArgs
 	arg.MustParse(&args)
 
+	// Validate input arguments.
 	if args.MaxRetries < 0 {
 		log.Fatal("max-retries cannot be less than 0")
 	}
-
 	if (args.TargetRepo != "" && args.Query != "") || (args.TargetRepo == "" && args.Query == "") {
 		log.Fatal("Either TargetRepo must be set or Query, not both")
 	}
@@ -61,6 +67,7 @@ func main() {
 	ctx := context.Background()
 	apiClient := NewGitHubAPI(ctx, args.GithubToken, args.MaxRetries, args.RateLimit, args.DryRun)
 
+	// Parse secrets and variables from the provided strings.
 	secretsMap, err := parseKeyValuePairs(args.Secrets)
 	if err != nil {
 		log.Fatalf("Error parsing secrets: %v", err)
@@ -71,12 +78,12 @@ func main() {
 		log.Fatalf("Error parsing variables: %v", err)
 	}
 
+	// Process repositories based on the provided target repository or query.
 	if args.Query != "" {
 		repos, err := apiClient.SearchRepositories(ctx, args.Query)
 		if err != nil {
 			log.Fatalf("Error searching for repositories: %v", err)
 		}
-
 		for _, repo := range repos {
 			targetOwner := repo.GetOwner().GetLogin()
 			targetRepoName := repo.GetName()
@@ -88,25 +95,22 @@ func main() {
 	}
 }
 
+// processRepository handles the synchronization of secrets and variables for a single repository.
 func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubActionClient, owner, repoName string, secretsMap, variablesMap map[string]string) {
+	// Log the processing of the repository.
 	log.Printf("Processing %s/%s\n", owner, repoName)
+	// Handle synchronization based on the specified target type.
 	switch TargetType(args.Type) {
 	case Actions:
-		if args.Environment == "" {
-			handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
-			handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
-		} else {
-			handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
-			handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
-		}
+		handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+		handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
 	case Dependabot:
 		handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	case Codespaces:
 		handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	default:
-		log.Fatalf("Unsupported target: %s", args.Type)
+		log.Fatalf("Unsupported target type: %s", args.Type)
 	}
-
 	log.Printf("Successfully processed values for %s/%s\n", owner, repoName)
 }
 
@@ -200,9 +204,10 @@ func handleCodespacesSecrets(ctx context.Context, args EnvArgs, client GitHubAct
 	log.Println("Codespaces secrets processed successfully.")
 }
 
-func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
-	secrets := make(map[string]string)
-	lines := strings.Split(secretsRaw, "\n")
+// parseKeyValuePairs takes a raw string of newline-separated key=value pairs and converts it into a map.
+func parseKeyValuePairs(raw string) (map[string]string, error) {
+	pairs := make(map[string]string)
+	lines := strings.Split(raw, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -210,22 +215,22 @@ func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
 		}
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("malformed secret, does not contain a key=value pair: %s", line)
+			return nil, fmt.Errorf("malformed pair, does not contain a key=value pair: %s", line)
 		}
 		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 		if key == "" || value == "" {
-			return nil, fmt.Errorf("malformed secret, key or value is empty: %s", line)
+			return nil, fmt.Errorf("malformed pair, key or value is empty: %s", line)
 		}
-		secrets[key] = value
+		pairs[strings.ToUpper(key)] = value
 	}
-	return secrets, nil
+	return pairs, nil
 }
 
+// parseRepoFullName splits a full repository name into its owner and repository name components.
 func parseRepoFullName(fullName string) (owner, repo string) {
 	parts := strings.SplitN(fullName, "/", 2)
-	if len(parts) == 2 && parts[0] != "" && parts[1] != "" {
-		return parts[0], parts[1]
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		log.Fatalf("Invalid repository format: %s", fullName)
 	}
-	log.Fatalf("Invalid repository format: %s", fullName)
-	return "", ""
+	return parts[0], parts[1]
 }
