@@ -187,7 +187,6 @@ func (api *gitHubAPI) SyncRepoSecrets(ctx context.Context, owner, repo string, m
 					log.Printf("Dry run: Would delete secret '%s' from repo %s/%s\n", secret.Name, owner, repo)
 				}
 			}
-
 			if resp.NextPage == 0 {
 				break
 			}
