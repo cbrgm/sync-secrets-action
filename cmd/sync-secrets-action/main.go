@@ -93,10 +93,11 @@ func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubAction
 	case Actions:
 		if args.Environment == "" {
 			handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+			handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
 		} else {
 			handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
+			handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
 		}
-		handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
 	case Dependabot:
 		handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	case Codespaces:
@@ -151,6 +152,21 @@ func handleEnvironmentSecrets(ctx context.Context, args EnvArgs, client GitHubAc
 		}
 	}
 	log.Println("Environment secrets processed successfully.")
+}
+
+func handleEnvironmentVariables(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo, environment string, variables map[string]string) {
+	if args.Prune {
+		err := client.SyncEnvVariables(ctx, owner, repo, environment, variables)
+		if err != nil {
+			log.Fatalf("Failed to sync environment variables: %v", err)
+		}
+	} else {
+		err := client.PutEnvVariables(ctx, owner, repo, environment, variables)
+		if err != nil {
+			log.Fatalf("Failed to put environment variables: %v", err)
+		}
+	}
+	log.Println("Environment variables processed successfully.")
 }
 
 func handleDependabotSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {

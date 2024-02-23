@@ -7,8 +7,11 @@ inputs:
     description: 'The GitHub token to use.'
     required: true
   target:
-    description: 'The repository to sync secrets and variables to.'
-    required: true
+    description: 'The repository to sync secrets and variables to. Either this or query must be set, not both.'
+    required: false
+  query:
+    description: 'GitHub search query to find repositories for batch processing. Either this or target must be set, not both.'
+    required: false
   secrets:
     description: 'Secrets to sync.'
     required: false
@@ -20,7 +23,7 @@ inputs:
     default: "false"
     required: false
   max-retries:
-    description: 'Maximum number of retries when hitting rate limits.'
+    description: 'Maximum number of retries for operations. Must not be smaller than zero.'
     default: "3"
     required: false
   dry-run:
@@ -28,11 +31,11 @@ inputs:
     default: "false"
     required: false
   prune:
-    description: 'Prunes all existing secrets and variables not in the subset of existing ones and ones defined in this action.'
+    description: 'Prunes all existing secrets and variables not in the subset of those defined in this action.'
     default: "false"
     required: false
   environment:
-    description: 'The GitHub environment to sync variables or secrets to.'
+    description: 'The GitHub environment to sync variables or secrets to. Use when targeting environment-specific secrets or variables.'
     required: false
   type:
     description: 'Type of the secrets to manage: actions, dependabot, or codespaces.'
@@ -47,14 +50,15 @@ runs:
     - ${{ inputs.github-token }}
     - --target
     - ${{ inputs.target }}
+    - --query
+    - ${{ inputs.query }}
     - --secrets
     - ${{ inputs.secrets }}
     - --variables
     - ${{ inputs.variables }}
     - --rate-limit
     - ${{ inputs.rate-limit }}
-    - --max-retries
-    - ${{ inputs.max-retries }}
+    - --max-retries=${{ inputs.max-retries }}
     - --dry-run=${{ inputs.dry-run }}
     - --prune=${{ inputs.prune }}
     - --environment
