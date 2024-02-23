@@ -27,7 +27,7 @@ type GitHubActionClient interface {
 	// Repository variables management
 	PutRepoVariables(ctx context.Context, owner, repo string, mappings map[string]string) error
 	CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error)
-	DeleteRepoVariable(ctx context.Context, owner, repo string, variableName string) (*github.Response, error)
+	DeleteRepoVariable(ctx context.Context, owner, repo, variableName string) (*github.Response, error)
 	ListRepoVariables(ctx context.Context, owner, repo string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error)
 	SyncRepoVariables(ctx context.Context, owner, repo string, mappings map[string]string) error
 
@@ -414,7 +414,7 @@ func (api *gitHubAPI) CreateOrUpdateRepoVariable(ctx context.Context, owner, rep
 	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, variable)
 }
 
-func (api *gitHubAPI) DeleteRepoVariable(ctx context.Context, owner, repo string, variableName string) (*github.Response, error) {
+func (api *gitHubAPI) DeleteRepoVariable(ctx context.Context, owner, repo, variableName string) (*github.Response, error) {
 	if api.isRateLimitExceeded(ctx) {
 		log.Println(rateLimitedMessage)
 		os.Exit(0)
