@@ -46,7 +46,8 @@ runs:
   using: 'docker'
   image: 'docker://ghcr.io/cbrgm/sync-secrets-action:v1'
   args:
-    - --github-token=${{ inputs.github-token }}
+    - --github-token
+    - ${{ inputs.github-token }}
     - --target
     - ${{ inputs.target }}
     - --query
@@ -59,7 +60,8 @@ runs:
     - ${{ inputs.max-retries }}
     - --dry-run=${{ inputs.dry-run }}
     - --prune=${{ inputs.prune }}
-    - --type=${{ inputs.type }}
+    - --type
+    - ${{ inputs.type }}
     - --secrets
     - ${{ inputs.secrets }}
     - --variables
