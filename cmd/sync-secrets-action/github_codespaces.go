@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v59/github"
 )
 
-// GitHubCodespacesSecrets for GitHub Codespaces secrets management
+// GitHubCodespacesSecrets defines the interface for managing GitHub Codespaces secrets.
 type GitHubCodespacesSecrets interface {
 	CreateOrUpdateCodespacesSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error)
 	DeleteCodespacesSecret(ctx context.Context, owner, repo, name string) (*github.Response, error)
@@ -19,18 +19,22 @@ type GitHubCodespacesSecrets interface {
 	SyncCodespacesSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error
 }
 
+// GetCodespacesPublicKey retrieves the public key for a repository, used for encrypting Codespaces secrets.
 func (api *gitHubAPI) GetCodespacesPublicKey(ctx context.Context, owner, repo string) (*github.PublicKey, *github.Response, error) {
 	return api.client.Codespaces.GetRepoPublicKey(ctx, owner, repo)
 }
 
+// CreateOrUpdateCodespacesSecret adds or updates a secret in a repository's Codespaces environment.
 func (api *gitHubAPI) CreateOrUpdateCodespacesSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
 	return api.client.Codespaces.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
 }
 
+// DeleteCodespacesSecret removes a secret from a repository's Codespaces environment.
 func (api *gitHubAPI) DeleteCodespacesSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
 	return api.client.Codespaces.DeleteRepoSecret(ctx, owner, repo, name)
 }
 
+// ListCodespacesSecrets lists all secrets available in a repository's Codespaces environment.
 func (api *gitHubAPI) ListCodespacesSecrets(ctx context.Context, owner, repo string, opts *github.ListOptions) (*github.Secrets, *github.Response, error) {
 	return api.client.Codespaces.ListRepoSecrets(ctx, owner, repo, opts)
 }
@@ -63,6 +67,7 @@ func (api *gitHubAPI) PutCodespacesSecrets(ctx context.Context, owner, repo stri
 	return nil
 }
 
+// PutCodespacesSecrets creates or updates multiple Codespaces secrets for a repository.
 func (api *gitHubAPI) SyncCodespacesSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
 	if api.dryRunEnabled {
 		log.Printf("Dry run: Syncing Codespaces secrets for repo %s/%s", owner, repo)
@@ -122,6 +127,9 @@ func (api *gitHubAPI) SyncCodespacesSecrets(ctx context.Context, owner, repo str
 
 	return api.PutCodespacesSecrets(ctx, owner, repo, mappings)
 }
+
+// Below are rate limited and retryable implementations of the GitHubCodespacesSecrets interface methods.
+// These wrap the basic implementations with additional functionality like waiting for rate limit resets or retrying on failure.
 
 // Ratelimiting
 
