@@ -8,6 +8,29 @@
 [![go-binaries](https://github.com/cbrgm/sync-secrets-action/actions/workflows/go-binaries.yml/badge.svg)](https://github.com/cbrgm/sync-secrets-action/actions/workflows/go-binaries.yml)
 [![container](https://github.com/cbrgm/sync-secrets-action/actions/workflows/container.yml/badge.svg)](https://github.com/cbrgm/sync-secrets-action/actions/workflows/container.yml)
 
+- [Sync Secrets Action](#sync-secrets-action)
+   * [Inputs](#inputs)
+   * [GitHub Token Requirements](#github-token-requirements)
+   * [Container Usage](#container-usage)
+   * [Usage Examples](#usage-examples)
+      + [Syncing Repository Secrets and Variables](#syncing-repository-secrets-and-variables)
+      + [Matrix Build Example - Syncing Across Multiple Repositories](#matrix-build-example-syncing-across-multiple-repositories)
+      + [Query Example - Syncing to Repositories by Search Query](#query-example-syncing-to-repositories-by-search-query)
+      + [Advanced Usage - Syncing Environment Secrets](#advanced-usage-syncing-environment-secrets)
+      + [Sync Secrets Across Multiple Repositories and Environments](#sync-secrets-across-multiple-repositories-and-environments)
+      + [Syncing Codespaces Secrets](#syncing-codespaces-secrets)
+      + [Syncing Dependabot Secrets](#syncing-dependabot-secrets)
+      + [Local Development](#local-development)
+   * [High-Level Functionality](#high-level-functionality)
+   * [FAQ on Security](#faq-on-security)
+      + [Is it safe to use this GitHub Action for syncing secrets?](#is-it-safe-to-use-this-github-action-for-syncing-secrets)
+      + [Can others see my secrets during the sync process?](#can-others-see-my-secrets-during-the-sync-process)
+      + [Are my secrets protected from unauthorized access?](#are-my-secrets-protected-from-unauthorized-access)
+      + [Does this action keep my secrets safe even in public repositories?](#does-this-action-keep-my-secrets-safe-even-in-public-repositories)
+      + [Will using this action increase the risk of secret leakage?](#will-using-this-action-increase-the-risk-of-secret-leakage)
+   * [Why yet another action?](#why-yet-another-action)
+   * [Contributing & License](#contributing-license)
+
 ## Inputs
 
 - `github-token`: **Required** - The GitHub token to use. Use GitHub secrets for security.
@@ -271,7 +294,29 @@ sequenceDiagram
     GitHubAction->>-User: Execution Finished
 ```
 
-### Why yet another action?
+## FAQ on Security
+
+### Is it safe to use this GitHub Action for syncing secrets?
+
+Yes, it is designed with safety in mind. However, like any tool, the security level depends on proper usage and configuration. Ensure your GitHub token has the minimum required permissions.
+
+### Can others see my secrets during the sync process?
+
+No, secrets are encrypted and handled within GitHub's secure environment. Yet, be cautious with the output logs and error messages to avoid accidental exposure.
+
+### Are my secrets protected from unauthorized access?
+
+Yes, they are protected using GitHub's security mechanisms. Nonetheless, the security is also contingent on how well access controls and permissions are managed in your GitHub repository settings.
+
+### Does this action keep my secrets safe even in public repositories?
+
+Yes, secrets are not exposed in code or logs, ensuring they remain secure. However, the inherent risk of public repositories means you should be extra vigilant in monitoring access and usage patterns.
+
+### Will using this action increase the risk of secret leakage?
+
+Using this action does not inherently increase risk if followed by GitHub's security guidelines and best practices. Risks mainly arise from misconfigurations or improper handling of secrets on the user's part. Regular audits and updates are recommended to maintain security.
+
+## Why yet another action?
 
 While building my GitHub Action for secret synchronization, I drew inspiration from existing solutions, focusing on addressing specific challenges and enhancing user experience:
 
