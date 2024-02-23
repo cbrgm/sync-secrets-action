@@ -50,6 +50,8 @@ func (api *gitHubAPI) ListEnvVariables(ctx context.Context, repoID int, envName 
 }
 
 func (api *gitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, repoID int, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
+	// todo(cbrgm): This is necessary because there's no CreateOrUpdate, is it missing?
+	_, _ = api.client.Actions.DeleteEnvVariable(ctx, int(repoID), envName, eVariable.Name)
 	return api.client.Actions.CreateEnvVariable(ctx, repoID, envName, eVariable)
 }
 

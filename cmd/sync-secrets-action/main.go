@@ -89,6 +89,7 @@ func main() {
 }
 
 func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubActionClient, owner, repoName string, secretsMap, variablesMap map[string]string) {
+	log.Printf("Processing %s/%s\n", owner, repoName)
 	switch TargetType(args.Type) {
 	case Actions:
 		if args.Environment == "" {
@@ -106,7 +107,7 @@ func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubAction
 		log.Fatalf("Unsupported target: %s", args.Type)
 	}
 
-	log.Printf("Successfully processed secrets for %s/%s\n", owner, repoName)
+	log.Printf("Successfully processed values for %s/%s\n", owner, repoName)
 }
 
 func handleRepoSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
