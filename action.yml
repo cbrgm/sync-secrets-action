@@ -54,14 +54,11 @@ runs:
     - ${{ inputs.query }}
     - --environment
     - ${{ inputs.environment }}
-    - --rate-limit
-    - ${{ inputs.rate-limit }}
-    - --max-retries
-    - ${{ inputs.max-retries }}
+    - --rate-limit=${{ inputs.rate-limit }}
+    - --max-retries=${{ inputs.max-retries }}
     - --dry-run=${{ inputs.dry-run }}
     - --prune=${{ inputs.prune }}
-    - --type
-    - ${{ inputs.type }}
+    - --type=${{ inputs.type }}
     - --secrets
     - ${{ inputs.secrets }}
     - --variables
