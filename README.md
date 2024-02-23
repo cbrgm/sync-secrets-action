@@ -22,6 +22,16 @@
 - `type`: Optional - Type of the secrets to manage: `actions`, `dependabot`, or `codespaces`. Default is `actions`.
 - `query`: Optional - GitHub search query to find repositories for batch processing. Either `query` or `target` must be set, but not both.
 
+## GitHub Token Requirements
+
+> **Note**: To use Sync Secrets Action, you need a GitHub Token with the right permissions.
+
+For a Personal Access Token (PAT), create one in your GitHub settings with `repo` and, if needed, `admin:org` permissions.
+
+For a GitHub App token, create an app in GitHub settings, set necessary permissions, install it to target repositories, and use the private key for authentication.
+
+Store your token in GitHub secrets and use it in the `github-token` input of the action.
+
 ## Container Usage
 
 This action can be executed independently from workflows within a container. To do so, use the following command:
@@ -226,6 +236,55 @@ You can build this action from source using `Go`:
 ```bash
 make build
 ```
+
+## High-Level Functionality
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant GitHubAction
+    participant GitHubAPI
+    participant Repository
+
+    User->>+GitHubAction: Execute Action
+    GitHubAction->>+GitHubAPI: Create API Client
+    GitHubAPI->>-GitHubAction: Client Created
+    GitHubAction->>GitHubAction: Parse Secrets & Variables
+    GitHubAction->>+GitHubAPI: Search Repositories (if query provided)
+    GitHubAPI->>-GitHubAction: Return Repositories
+    GitHubAction->>GitHubAction: Process Each Repository
+    GitHubAction->>+Repository: Process Repository
+    alt Environment Specific
+        Repository->>+GitHubAPI: Handle Environment Secrets & Variables
+        GitHubAPI->>-Repository: Sync/Update Secrets & Variables
+    else Repository Specific
+        Repository->>+GitHubAPI: Handle Repository Secrets & Variables
+        GitHubAPI->>-Repository: Sync/Update Secrets & Variables
+    else Dependabot
+        Repository->>+GitHubAPI: Handle Dependabot Secrets
+        GitHubAPI->>-Repository: Sync/Update Secrets
+    else Codespaces
+        Repository->>+GitHubAPI: Handle Codespaces Secrets
+        GitHubAPI->>-Repository: Sync/Update Secrets
+    end
+    Repository->>-GitHubAction: Processing Complete
+    GitHubAction->>-User: Execution Finished
+```
+
+### Why yet another action?
+
+While building my GitHub Action for secret synchronization, I drew inspiration from existing solutions, focusing on addressing specific challenges and enhancing user experience:
+
+- [Secrets Sync Action by @jpoehnelt](https://github.com/jpoehnelt/secrets-sync-action)
+- [Secrets Sync by @xt0rted](https://github.com/xt0rted/secrets-sync)
+
+Key design principles guiding my action development include:
+
+- **Standardizing Inputs**: Adopting kebab-case for inputs and adding aliases to reduce potential user errors, inspired by the conventions seen in the repositories listed.
+- **Enhancing Matching Logic**: Utilizing GitHub Search syntax over regex for repository targeting to leverage familiarity and simplify testing, a refinement based on operational insights from these actions.
+- **Explicit Secret Specification**: Preferring direct secret naming to regex patterns for clarity and precision, addressing complexity and confusion observed in the existing actions.
+
+These principles aim to streamline GitHub workflow setups, improve UX, and ensure the synchronization process is both predictable and secure.
 
 ## Contributing & License
 
