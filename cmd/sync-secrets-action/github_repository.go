@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v59/github"
 )
 
-// GitHubRepoSecrets for GitHub repository secrets management
+// GitHubRepoSecrets for GitHub repository secrets management.
 type GitHubRepoSecrets interface {
 	CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error)
 	DeleteRepoSecret(ctx context.Context, owner, repo, name string) (*github.Response, error)
@@ -19,7 +19,7 @@ type GitHubRepoSecrets interface {
 	SyncRepoSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error
 }
 
-// GitHubRepoVariables for GitHub repository variables management
+// GitHubRepoVariables for GitHub repository variables management.
 type GitHubRepoVariables interface {
 	CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error)
 	DeleteRepoVariable(ctx context.Context, owner, repo, variableName string) (*github.Response, error)
@@ -282,7 +282,7 @@ func (r *rateLimitedGitHubAPI) SyncRepoVariables(ctx context.Context, owner, rep
 
 // Retryable
 
-// GitHubRepoSecrets implementations
+// GitHubRepoSecrets implementations.
 func (r *retryableGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
 	var resp *github.Response
 	var err error

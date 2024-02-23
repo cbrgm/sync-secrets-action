@@ -7,7 +7,7 @@ import (
 	"github.com/google/go-github/v59/github"
 )
 
-// GitHubRepositorySearch for searching GitHub repositories
+// GitHubRepositorySearch for searching GitHub repositories.
 type GitHubRepositorySearch interface {
 	SearchRepositories(ctx context.Context, query string) ([]*github.Repository, error)
 	Ratelimits(ctx context.Context) (*github.RateLimits, *github.Response, error)

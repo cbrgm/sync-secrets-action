@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-github/v59/github"
 )
 
-// GitHubEnvSecrets for GitHub environment secrets management
+// GitHubEnvSecrets for GitHub environment secrets management.
 type GitHubEnvSecrets interface {
 	CreateOrUpdateEnvSecret(ctx context.Context, repoID int, envName string, eSecret *github.EncryptedSecret) (*github.Response, error)
 	DeleteEnvSecret(ctx context.Context, repoID int, envName, name string) (*github.Response, error)
