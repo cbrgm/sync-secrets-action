@@ -11,15 +11,16 @@
 ## Inputs
 
 - `github-token`: **Required** - The GitHub token to use. Use GitHub secrets for security.
-- `target`: **Required** - The repository to sync secrets and variables to.
+- `target`: Optional - The repository to sync secrets and variables to. Either `target` or `query` must be set, but not both.
 - `secrets`: Optional - Secrets to sync. Formatted as a string of newline-separated `KEY=VALUE` pairs.
 - `variables`: Optional - Variables to sync. Formatted as a string of newline-separated `KEY=VALUE` pairs.
-- `rate-limit`: Optional - Enables rate limit checking. Set to `"true"` to enable. Default is `"false"`.
-- `max-retries`: Optional - Maximum number of retries when hitting rate limits. Default is `"3"`.
-- `dry-run`: Optional - Dry run. If true, no changes will be made. Useful for testing. Default is `"false"`.
-- `prune`: Optional - Prunes all existing secrets and variables not in the subset of existing ones and ones defined in this action. Default is `"false"`.
-- `environment`: Optional - The GitHub environment to sync variables or secrets to. Use when targeting an environment-specific set of secrets or variables.
-- `type`: Optional - Type of the secrets to manage: `actions`, `dependabot`, or `codespaces`. Default is `"actions"`.
+- `rate-limit`: Optional - Enables rate limit checking. Set to `true` to enable. Default is `false`.
+- `max-retries`: Optional - Maximum number of retries for operations. Must not be smaller than zero. Default is `3`.
+- `dry-run`: Optional - Dry run mode. If true, no changes will be made. Useful for testing. Default is `false`.
+- `prune`: Optional - Prunes all existing secrets and variables not in the subset of those defined. Default is `false`.
+- `environment`: Optional - The GitHub environment to sync variables or secrets to. Use when targeting environment-specific secrets or variables.
+- `type`: Optional - Type of the secrets to manage: `actions`, `dependabot`, or `codespaces`. Default is `actions`.
+- `query`: Optional - GitHub search query to find repositories for batch processing. Either `query` or `target` must be set, but not both.
 
 ## Container Usage
 
@@ -33,7 +34,7 @@ podman run --rm -it ghcr.io/cbrgm/sync-secrets-action:v1 --help
 
 Here are some usage examples to help you getting started! Feel free to contribute more.
 
-### Basic Usage - Syncing Repository Secrets and Variables
+### Syncing Repository Secrets and Variables
 
 ```yaml
 name: Sync Repository Secrets and Variables
@@ -59,7 +60,7 @@ jobs:
 
 ```
 
-### Basic Usage - Matrix Build Example - Syncing Across Multiple Repositories
+### Matrix Build Example - Syncing Across Multiple Repositories
 
 ```yaml
 name: Sync Secrets Across Repositories
@@ -84,6 +85,33 @@ jobs:
           variables: |
             GLOBAL_VAR=globalvarvalue
 ```
+
+### Query Example - Syncing to Repositories by Search Query
+
+```yaml
+name: Sync Secrets to Repositories by Query
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-secrets-by-query:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Secrets to Repositories Matching Query
+        uses: cbrgm/sync-secrets-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          query: 'org:myorganization topic:mytopic'
+          secrets: |
+            GLOBAL_SECRET=${{ secrets.GLOBAL_SECRET }}
+          variables: |
+            GLOBAL_VAR=globalvarvalue
+```
+
+> This workflow uses the query argument to target repositories within `myorganization` that are tagged with the topic `mytopic`. It syncs the specified secrets and variables to all matching repositories.
+
+See [GitHub Queries](https://docs.github.com/en/graphql/reference/queries).
 
 ### Advanced Usage - Syncing Environment Secrets
 
@@ -204,5 +232,4 @@ make build
 * **Contributions Welcome!**: Interested in improving or adding features? Check our [Contributing Guide](https://github.com/cbrgm/pr-size-labeler-action/blob/main/CONTRIBUTING.md) for instructions on submitting changes and setting up development environment.
 * **Open-Source & Free**: Developed in my spare time, available for free under [Apache 2.0 License](https://github.com/cbrgm/pr-size-labeler-action/blob/main/LICENSE). License details your rights and obligations.
 * **Your Involvement Matters**: Code contributions, suggestions, feedback crucial for improvement and success. Let's maintain it as a useful resource for all 🌍.
-
 

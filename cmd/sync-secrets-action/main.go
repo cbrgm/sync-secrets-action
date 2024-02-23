@@ -4,24 +4,38 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/alexflint/go-arg"
-	"github.com/google/go-github/v59/github"
-	"golang.org/x/oauth2"
 )
 
-var args struct {
-	TargetRepo  string `arg:"--target,env:TARGET,required"`
+// Global variables for application metadata.
+var (
+	Version   string              // Version of the application.
+	Revision  string              // Revision or Commit this binary was built from.
+	GoVersion = runtime.Version() // GoVersion running this binary.
+	StartTime = time.Now()        // StartTime of the application.
+)
+
+type EnvArgs struct {
+	TargetRepo  string `arg:"--target,env:TARGET"`
 	GithubToken string `arg:"--github-token,env:GITHUB_TOKEN,required"`
 	DryRun      bool   `arg:"--dry-run,env:DRY_RUN"`
 	Secrets     string `arg:"--secrets,env:SECRETS"`
 	Variables   string `arg:"--variables,env:VARIABLES"`
 	RateLimit   bool   `arg:"--rate-limit,env:RATE_LIMIT"`
-	MaxRetries  bool   `arg:"--max-retries,env:MAX_RETRIES"`
+	MaxRetries  int    `arg:"--max-retries,env:MAX_RETRIES" default:"3"`
 	Prune       bool   `arg:"--prune,env:PRUNE"`
 	Environment string `arg:"--environment,env:ENVIRONMENT"`
 	Type        string `arg:"--type,env:TYPE" default:"actions"`
+	Query       string `arg:"--query,env:QUERY"`
+}
+
+// Version returns a formatted string with application version details.
+func (EnvArgs) Version() string {
+	return fmt.Sprintf("Version: %s %s\nBuildTime: %s\n%s\n", Revision, Version, StartTime.Format("2006-01-02"), GoVersion)
 }
 
 type TargetType string
@@ -33,10 +47,19 @@ const (
 )
 
 func main() {
+	var args EnvArgs
 	arg.MustParse(&args)
+
+	if args.MaxRetries < 0 {
+		log.Fatal("max-retries cannot be less than 0")
+	}
+
+	if (args.TargetRepo != "" && args.Query != "") || (args.TargetRepo == "" && args.Query == "") {
+		log.Fatal("Either TargetRepo must be set or Query, not both")
+	}
+
 	ctx := context.Background()
-	client := newGitHubClient(ctx, args.GithubToken)
-	apiClient := NewGitHubAPI(client, args.RateLimit, args.DryRun)
+	apiClient := NewGitHubAPI(ctx, args.GithubToken, args.MaxRetries, args.RateLimit, args.DryRun)
 
 	secretsMap, err := parseKeyValuePairs(args.Secrets)
 	if err != nil {
@@ -48,32 +71,44 @@ func main() {
 		log.Fatalf("Error parsing variables: %v", err)
 	}
 
-	targetOwner, targetRepoName := parseRepoFullName(args.TargetRepo)
+	if args.Query != "" {
+		repos, err := apiClient.SearchRepositories(ctx, args.Query)
+		if err != nil {
+			log.Fatalf("Error searching for repositories: %v", err)
+		}
 
-	if args.DryRun {
-		log.Printf("Dry run enabled. No changes will be made to %s\n", args.TargetRepo)
+		for _, repo := range repos {
+			targetOwner := repo.GetOwner().GetLogin()
+			targetRepoName := repo.GetName()
+			processRepository(ctx, args, apiClient, targetOwner, targetRepoName, secretsMap, variablesMap)
+		}
+	} else {
+		targetOwner, targetRepoName := parseRepoFullName(args.TargetRepo)
+		processRepository(ctx, args, apiClient, targetOwner, targetRepoName, secretsMap, variablesMap)
 	}
+}
 
+func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubActionClient, owner, repoName string, secretsMap, variablesMap map[string]string) {
 	switch TargetType(args.Type) {
 	case Actions:
 		if args.Environment == "" {
-			handleRepoSecrets(ctx, apiClient, targetOwner, targetRepoName, secretsMap)
+			handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 		} else {
-			handleEnvironmentSecrets(ctx, apiClient, targetOwner, targetRepoName, args.Environment, secretsMap)
+			handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
 		}
-		handleRepoVariables(ctx, apiClient, targetOwner, targetRepoName, variablesMap)
+		handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
 	case Dependabot:
-		handleDependabotSecrets(ctx, apiClient, targetOwner, targetRepoName, secretsMap)
+		handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	case Codespaces:
-		handleCodespacesSecrets(ctx, apiClient, targetOwner, targetRepoName, secretsMap)
+		handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	default:
 		log.Fatalf("Unsupported target: %s", args.Type)
 	}
 
-	log.Printf("Successfully processed secrets for %s/%s\n", targetOwner, targetRepoName)
+	log.Printf("Successfully processed secrets for %s/%s\n", owner, repoName)
 }
 
-func handleRepoSecrets(ctx context.Context, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+func handleRepoSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
 	if args.Prune {
 		err := client.SyncRepoSecrets(ctx, owner, repo, secrets)
 		if err != nil {
@@ -88,7 +123,7 @@ func handleRepoSecrets(ctx context.Context, client GitHubActionClient, owner, re
 	log.Println("Repository secrets processed successfully.")
 }
 
-func handleRepoVariables(ctx context.Context, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+func handleRepoVariables(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
 	if args.Prune {
 		err := client.SyncRepoVariables(ctx, owner, repo, secrets)
 		if err != nil {
@@ -103,7 +138,7 @@ func handleRepoVariables(ctx context.Context, client GitHubActionClient, owner, 
 	log.Println("Repository variables processed successfully.")
 }
 
-func handleEnvironmentSecrets(ctx context.Context, client GitHubActionClient, owner, repo, environment string, secrets map[string]string) {
+func handleEnvironmentSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo, environment string, secrets map[string]string) {
 	if args.Prune {
 		err := client.SyncEnvSecrets(ctx, owner, repo, environment, secrets)
 		if err != nil {
@@ -118,7 +153,7 @@ func handleEnvironmentSecrets(ctx context.Context, client GitHubActionClient, ow
 	log.Println("Environment secrets processed successfully.")
 }
 
-func handleDependabotSecrets(ctx context.Context, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+func handleDependabotSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
 	if args.Prune {
 		err := client.SyncDependabotSecrets(ctx, owner, repo, secrets)
 		if err != nil {
@@ -133,7 +168,7 @@ func handleDependabotSecrets(ctx context.Context, client GitHubActionClient, own
 	log.Println("Dependabot secrets processed successfully.")
 }
 
-func handleCodespacesSecrets(ctx context.Context, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+func handleCodespacesSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
 	if args.Prune {
 		err := client.SyncCodespacesSecrets(ctx, owner, repo, secrets)
 		if err != nil {
@@ -146,12 +181,6 @@ func handleCodespacesSecrets(ctx context.Context, client GitHubActionClient, own
 		}
 	}
 	log.Println("Codespaces secrets processed successfully.")
-}
-
-func newGitHubClient(ctx context.Context, token string) *github.Client {
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	return github.NewClient(tc)
 }
 
 func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
