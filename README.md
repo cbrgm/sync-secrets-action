@@ -263,7 +263,7 @@ make build
 ## High-Level Functionality
 
 ```mermaid
-``sequenceDiagram
+sequenceDiagram
     participant CronUser as Cron / User
     participant GitHubAction
     participant GitHubAPI
@@ -292,6 +292,7 @@ make build
     end
     Repository->>-GitHubAction: Processing Complete
     GitHubAction->>-CronUser: Execution Finished`
+```
 
 ## FAQ on Security
 
