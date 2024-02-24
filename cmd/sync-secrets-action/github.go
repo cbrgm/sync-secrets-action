@@ -87,19 +87,17 @@ func (g *rateLimitedGitHubAPI) waitForRateLimitReset(ctx context.Context) {
 }
 
 // ensureRatelimits checks the current rate limit status and waits for a reset if limits are close to being exceeded.
-func (g *rateLimitedGitHubAPI) ensureRatelimits(ctx context.Context) bool {
+func (g *rateLimitedGitHubAPI) ensureRatelimits(ctx context.Context) {
 	rateLimitStatus, _, err := g.client.Ratelimits(ctx)
 	if err != nil {
 		log.Printf("Error fetching rate limit status: %v", err)
-		return false
+		return
 	}
 
 	coreRate := rateLimitStatus.Core
 	if float64(coreRate.Remaining)/float64(coreRate.Limit) <= 0.05 {
 		g.waitForRateLimitReset(ctx)
 	}
-
-	return true
 }
 
 // retryableGitHubAPI is a decorator for GitHubActionClient that adds retry functionality using exponential backoff.

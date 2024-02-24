@@ -16,8 +16,8 @@
       + [Syncing Repository Secrets and Variables](#syncing-repository-secrets-and-variables)
       + [Matrix Build Example - Syncing Across Multiple Repositories](#matrix-build-example-syncing-across-multiple-repositories)
       + [Query Example - Syncing to Repositories by Search Query](#query-example-syncing-to-repositories-by-search-query)
-      + [Advanced Usage - Syncing Environment Secrets](#advanced-usage-syncing-environment-secrets)
-      + [Sync Secrets Across Multiple Repositories and Environments](#sync-secrets-across-multiple-repositories-and-environments)
+      + [Syncing Environment Secrets](#advanced-usage-syncing-environment-secrets)
+      + [Syncing Secrets Across Multiple Repositories and Environments](#sync-secrets-across-multiple-repositories-and-environments)
       + [Syncing Codespaces Secrets](#syncing-codespaces-secrets)
       + [Syncing Dependabot Secrets](#syncing-dependabot-secrets)
       + [Local Development](#local-development)
@@ -47,7 +47,7 @@
 
 ## GitHub Token Requirements
 
-> **Note**: To use Sync Secrets Action, you need a GitHub Token with the right permissions.
+> **Note**: To use Sync Secrets Action, you need a GitHub Token with the right permissions. The default `GITHUB_TOKEN` won't work.
 
 For a Personal Access Token (PAT), create one in your GitHub settings with `repo` and, if needed, `admin:org` permissions.
 
@@ -146,7 +146,7 @@ jobs:
 
 See [GitHub Queries](https://docs.github.com/en/graphql/reference/queries).
 
-### Advanced Usage - Syncing Environment Secrets
+### Syncing Environment Secrets
 
 > Tip: Make sure these environments exist before distributing secrets!
 
@@ -175,7 +175,7 @@ jobs:
 
 ```
 
-### Sync Secrets Across Multiple Repositories and Environments
+### Syncing Secrets Across Multiple Repositories and Environments
 
 ```yaml
 name: Sync Secrets Across Repositories and Environments
@@ -263,13 +263,13 @@ make build
 ## High-Level Functionality
 
 ```mermaid
-sequenceDiagram
-    participant User
+``sequenceDiagram
+    participant CronUser as Cron / User
     participant GitHubAction
     participant GitHubAPI
     participant Repository
 
-    User->>+GitHubAction: Execute Action
+    CronUser->>+GitHubAction: Execute Action
     GitHubAction->>+GitHubAPI: Create API Client
     GitHubAPI->>-GitHubAction: Client Created
     GitHubAction->>GitHubAction: Parse Secrets & Variables
@@ -278,21 +278,20 @@ sequenceDiagram
     GitHubAction->>GitHubAction: Process Each Repository
     GitHubAction->>+Repository: Process Repository
     alt Environment Specific
-        Repository->>+GitHubAPI: Handle Environment Secrets & Variables
-        GitHubAPI->>-Repository: Sync/Update Secrets & Variables
+        Repository->>+GitHubAPI: List Environment Secrets & Variables Names
+        GitHubAPI->>-Repository: Update Secrets & Variables
     else Repository Specific
-        Repository->>+GitHubAPI: Handle Repository Secrets & Variables
-        GitHubAPI->>-Repository: Sync/Update Secrets & Variables
+        Repository->>+GitHubAPI: List Repository Secrets & Variables Names
+        GitHubAPI->>-Repository: Update Secrets & Variables
     else Dependabot
-        Repository->>+GitHubAPI: Handle Dependabot Secrets
-        GitHubAPI->>-Repository: Sync/Update Secrets
+        Repository->>+GitHubAPI: List Dependabot Secrets Names
+        GitHubAPI->>-Repository: Update Secrets
     else Codespaces
-        Repository->>+GitHubAPI: Handle Codespaces Secrets
-        GitHubAPI->>-Repository: Sync/Update Secrets
+        Repository->>+GitHubAPI: List Codespaces Secrets Names
+        GitHubAPI->>-Repository: Update Secrets
     end
     Repository->>-GitHubAction: Processing Complete
-    GitHubAction->>-User: Execution Finished
-```
+    GitHubAction->>-CronUser: Execution Finished`
 
 ## FAQ on Security
 
@@ -325,15 +324,12 @@ While building my GitHub Action for secret synchronization, I drew inspiration f
 
 Key design principles guiding my action development include:
 
-- **Standardizing Inputs**: Adopting kebab-case for inputs and adding aliases to reduce potential user errors, inspired by the conventions seen in the repositories listed.
-- **Enhancing Matching Logic**: Utilizing GitHub Search syntax over regex for repository targeting to leverage familiarity and simplify testing, a refinement based on operational insights from these actions.
+- **Standardizing Inputs**: Adopting kebab-case for inputs, inspired by the conventions seen in the repositories listed.
+- **Enhancing Matching Logic**: Utilizing GitHub Search syntax over regex for repository targeting.
 - **Explicit Secret Specification**: Preferring direct secret naming to regex patterns for clarity and precision, addressing complexity and confusion observed in the existing actions.
-
-These principles aim to streamline GitHub workflow setups, improve UX, and ensure the synchronization process is both predictable and secure.
 
 ## Contributing & License
 
-* **Contributions Welcome!**: Interested in improving or adding features? Check our [Contributing Guide](https://github.com/cbrgm/pr-size-labeler-action/blob/main/CONTRIBUTING.md) for instructions on submitting changes and setting up development environment.
-* **Open-Source & Free**: Developed in my spare time, available for free under [Apache 2.0 License](https://github.com/cbrgm/pr-size-labeler-action/blob/main/LICENSE). License details your rights and obligations.
+* **Contributions Welcome!**: Interested in improving or adding features? Check the [Contributing Guide](https://github.com/cbrgm/sync-secrets-action/blob/main/CONTRIBUTING.md) for instructions on submitting changes and setting up development environment.
+* **Free & Open**: Made during free time, costs nothing. See [Apache 2.0 License](https://github.com/cbrgm/sync-secrets-action/blob/main/LICENSE) for your rights.
 * **Your Involvement Matters**: Code contributions, suggestions, feedback crucial for improvement and success. Let's maintain it as a useful resource for all 🌍.
-
