@@ -323,7 +323,7 @@ While building my GitHub Action for secret synchronization, I drew inspiration f
 - [Secrets Sync Action by @jpoehnelt](https://github.com/jpoehnelt/secrets-sync-action)
 - [Secrets Sync by @xt0rted](https://github.com/xt0rted/secrets-sync)
 
-Key design principles guiding my action development include:
+Key design principles guiding this action development include:
 
 - **Standardizing Inputs**: Adopting kebab-case for inputs, inspired by the conventions seen in the repositories listed.
 - **Enhancing Matching Logic**: Utilizing GitHub Search syntax over regex for repository targeting.
