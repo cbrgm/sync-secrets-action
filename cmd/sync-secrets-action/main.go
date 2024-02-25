@@ -101,28 +101,16 @@ func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubAction
 	switch TargetType(args.Type) {
 	case Actions:
 		if args.Environment == "" {
-			if len(secretsMap) > 0 {
-				handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
-			}
-			if len(variablesMap) > 0 {
-				handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
-			}
+			handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+			handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
 		} else {
-			if len(secretsMap) > 0 {
-				handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
-			}
-			if len(variablesMap) > 0 {
-				handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
-			}
+			handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
+			handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
 		}
 	case Dependabot:
-		if len(secretsMap) > 0 {
-			handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
-		}
+		handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	case Codespaces:
-		if len(secretsMap) > 0 {
-			handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
-		}
+		handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
 	default:
 		log.Fatalf("Unsupported target: %s", args.Type)
 	}
@@ -131,6 +119,9 @@ func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubAction
 }
 
 func handleRepoSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+	if len(secrets) == 0 {
+		return
+	}
 	if args.Prune {
 		err := client.SyncRepoSecrets(ctx, owner, repo, secrets)
 		if err != nil {
@@ -145,14 +136,17 @@ func handleRepoSecrets(ctx context.Context, args EnvArgs, client GitHubActionCli
 	log.Println("Repository secrets processed successfully.")
 }
 
-func handleRepoVariables(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+func handleRepoVariables(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, variables map[string]string) {
+	if len(variables) == 0 {
+		return
+	}
 	if args.Prune {
-		err := client.SyncRepoVariables(ctx, owner, repo, secrets)
+		err := client.SyncRepoVariables(ctx, owner, repo, variables)
 		if err != nil {
 			log.Fatalf("Failed to sync repository secrets: %v", err)
 		}
 	} else {
-		err := client.PutRepoVariables(ctx, owner, repo, secrets)
+		err := client.PutRepoVariables(ctx, owner, repo, variables)
 		if err != nil {
 			log.Fatalf("Failed to put repository secrets: %v", err)
 		}
@@ -161,6 +155,9 @@ func handleRepoVariables(ctx context.Context, args EnvArgs, client GitHubActionC
 }
 
 func handleEnvironmentSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo, environment string, secrets map[string]string) {
+	if len(secrets) == 0 {
+		return
+	}
 	if args.Prune {
 		err := client.SyncEnvSecrets(ctx, owner, repo, environment, secrets)
 		if err != nil {
@@ -176,6 +173,9 @@ func handleEnvironmentSecrets(ctx context.Context, args EnvArgs, client GitHubAc
 }
 
 func handleEnvironmentVariables(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo, environment string, variables map[string]string) {
+	if len(variables) == 0 {
+		return
+	}
 	if args.Prune {
 		err := client.SyncEnvVariables(ctx, owner, repo, environment, variables)
 		if err != nil {
@@ -191,6 +191,9 @@ func handleEnvironmentVariables(ctx context.Context, args EnvArgs, client GitHub
 }
 
 func handleDependabotSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+	if len(secrets) == 0 {
+		return
+	}
 	if args.Prune {
 		err := client.SyncDependabotSecrets(ctx, owner, repo, secrets)
 		if err != nil {
@@ -206,6 +209,9 @@ func handleDependabotSecrets(ctx context.Context, args EnvArgs, client GitHubAct
 }
 
 func handleCodespacesSecrets(ctx context.Context, args EnvArgs, client GitHubActionClient, owner, repo string, secrets map[string]string) {
+	if len(secrets) == 0 {
+		return
+	}
 	if args.Prune {
 		err := client.SyncCodespacesSecrets(ctx, owner, repo, secrets)
 		if err != nil {
