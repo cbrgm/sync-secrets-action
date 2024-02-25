@@ -101,16 +101,28 @@ func processRepository(ctx context.Context, args EnvArgs, apiClient GitHubAction
 	switch TargetType(args.Type) {
 	case Actions:
 		if args.Environment == "" {
-			handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
-			handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
+			if len(secretsMap) > 0 {
+				handleRepoSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+			}
+			if len(variablesMap) > 0 {
+				handleRepoVariables(ctx, args, apiClient, owner, repoName, variablesMap)
+			}
 		} else {
-			handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
-			handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
+			if len(secretsMap) > 0 {
+				handleEnvironmentSecrets(ctx, args, apiClient, owner, repoName, args.Environment, secretsMap)
+			}
+			if len(variablesMap) > 0 {
+				handleEnvironmentVariables(ctx, args, apiClient, owner, repoName, args.Environment, variablesMap)
+			}
 		}
 	case Dependabot:
-		handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+		if len(secretsMap) > 0 {
+			handleDependabotSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+		}
 	case Codespaces:
-		handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+		if len(secretsMap) > 0 {
+			handleCodespacesSecrets(ctx, args, apiClient, owner, repoName, secretsMap)
+		}
 	default:
 		log.Fatalf("Unsupported target: %s", args.Type)
 	}
@@ -210,6 +222,11 @@ func handleCodespacesSecrets(ctx context.Context, args EnvArgs, client GitHubAct
 
 func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
 	secrets := make(map[string]string)
+
+	if secretsRaw == "" {
+		return secrets, nil
+	}
+
 	lines := strings.Split(secretsRaw, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
