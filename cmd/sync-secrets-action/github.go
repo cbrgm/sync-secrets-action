@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v60/github"
 	"golang.org/x/oauth2"
 )
 
