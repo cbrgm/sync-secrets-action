@@ -1,6 +1,6 @@
 {
-  "generated_at": "2024-02-23T17:06:02.391845+01:00",
-  "version": "v1.1.5-dirty",
+  "generated_at": "2024-03-13T11:43:19.408198029Z",
+  "version": "1.2.10",
   "files": [
     {
       "path": ".editorconfig"
