@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v60/github"
+	"github.com/google/go-github/v61/github"
 )
 
 // GitHubRepositorySearch for searching GitHub repositories.
