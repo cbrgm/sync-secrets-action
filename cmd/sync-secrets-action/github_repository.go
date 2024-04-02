@@ -45,6 +45,7 @@ func (api *gitHubAPI) ListRepoSecrets(ctx context.Context, owner, repo string, o
 }
 
 func (api *gitHubAPI) CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error) {
+	_, _ = api.client.Actions.DeleteRepoVariable(ctx, owner, repo, variable.Name)
 	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, variable)
 }
 
