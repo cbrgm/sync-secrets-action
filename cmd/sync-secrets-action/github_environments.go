@@ -18,9 +18,9 @@ type GitHubEnvSecrets interface {
 	PutEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error
 	SyncEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error
 
-	CreateOrUpdateEnvVariable(ctx context.Context, repoID int, envName string, eSecret *github.ActionsVariable) (*github.Response, error)
-	DeleteEnvVariable(ctx context.Context, repoID int, envName, name string) (*github.Response, error)
-	ListEnvVariables(ctx context.Context, repoID int, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error)
+	CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eSecret *github.ActionsVariable) (*github.Response, error)
+	DeleteEnvVariable(ctx context.Context, owner, repo, envName, name string) (*github.Response, error)
+	ListEnvVariables(ctx context.Context, owner, repo, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error)
 	PutEnvVariables(ctx context.Context, owner, repo, envName string, mappings map[string]string) error
 	SyncEnvVariables(ctx context.Context, owner, repo, envName string, mappings map[string]string) error
 }
@@ -41,18 +41,18 @@ func (api *gitHubAPI) CreateOrUpdateEnvSecret(ctx context.Context, repoID int, e
 	return api.client.Actions.CreateOrUpdateEnvSecret(ctx, repoID, envName, eSecret)
 }
 
-func (api *gitHubAPI) DeleteEnvVariable(ctx context.Context, repoID int, envName, name string) (*github.Response, error) {
-	return api.client.Actions.DeleteEnvVariable(ctx, int(repoID), envName, name)
+func (api *gitHubAPI) DeleteEnvVariable(ctx context.Context, owner, repo, envName, name string) (*github.Response, error) {
+	return api.client.Actions.DeleteEnvVariable(ctx, owner, repo, envName, name)
 }
 
-func (api *gitHubAPI) ListEnvVariables(ctx context.Context, repoID int, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
-	return api.client.Actions.ListEnvVariables(ctx, repoID, envName, opts)
+func (api *gitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
+	return api.client.Actions.ListEnvVariables(ctx, owner, repo, envName, opts)
 }
 
-func (api *gitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, repoID int, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
+func (api *gitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
 	// todo(cbrgm): This is necessary because there's no CreateOrUpdate, is it missing?
-	_, _ = api.client.Actions.DeleteEnvVariable(ctx, int(repoID), envName, eVariable.Name)
-	return api.client.Actions.CreateEnvVariable(ctx, repoID, envName, eVariable)
+	_, _ = api.client.Actions.DeleteEnvVariable(ctx, owner, repo, envName, eVariable.Name)
+	return api.client.Actions.CreateEnvVariable(ctx, owner, repo, envName, eVariable)
 }
 
 func (api *gitHubAPI) SyncEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
@@ -165,7 +165,7 @@ func (api *gitHubAPI) SyncEnvVariables(ctx context.Context, owner, repo, envName
 		log.Printf("Dry run: Syncing environment variables for '%s' in repo %s/%s", envName, owner, repo)
 		opts := &github.ListOptions{PerPage: 100}
 		for {
-			variables, resp, err := api.ListEnvVariables(ctx, int(r.GetID()), envName, opts)
+			variables, resp, err := api.ListEnvVariables(ctx, r.GetOwner().GetName(), r.GetName(), envName, opts)
 			if err != nil {
 				return fmt.Errorf("dry run: failed to fetch existing environment variables for %s in repo %s/%s: %v", envName, owner, repo, err)
 			}
@@ -194,7 +194,7 @@ func (api *gitHubAPI) SyncEnvVariables(ctx context.Context, owner, repo, envName
 	// Pagination setup
 	opts := &github.ListOptions{PerPage: 100}
 	for {
-		variables, resp, err := api.ListEnvVariables(ctx, int(r.GetID()), envName, opts)
+		variables, resp, err := api.ListEnvVariables(ctx, r.GetOwner().GetName(), r.GetName(), envName, opts)
 		if err != nil {
 			return fmt.Errorf("failed to list existing environment variables for %s: %v", envName, err)
 		}
@@ -212,7 +212,7 @@ func (api *gitHubAPI) SyncEnvVariables(ctx context.Context, owner, repo, envName
 	// Delete variables not in mappings
 	for variableName := range existingMap {
 		if _, exists := mappings[variableName]; !exists {
-			_, err := api.DeleteEnvVariable(ctx, int(r.GetID()), envName, variableName)
+			_, err := api.DeleteEnvVariable(ctx, r.GetOwner().GetName(), r.GetName(), envName, variableName)
 			if err != nil {
 				return fmt.Errorf("failed to delete environment variable %s in %s for repo %s/%s: %v", variableName, envName, owner, repo, err)
 			}
@@ -238,7 +238,7 @@ func (api *gitHubAPI) PutEnvVariables(ctx context.Context, owner, repo, envName 
 	}
 
 	for variableName, variableValue := range mappings {
-		_, err = api.CreateOrUpdateEnvVariable(ctx, int(r.GetID()), envName, &github.ActionsVariable{
+		_, err = api.CreateOrUpdateEnvVariable(ctx, r.GetOwner().GetName(), r.GetName(), envName, &github.ActionsVariable{
 			Name:  variableName,
 			Value: variableValue,
 		})
@@ -284,19 +284,19 @@ func (r *rateLimitedGitHubAPI) PutEnvVariables(ctx context.Context, owner, repo,
 	return r.client.PutEnvVariables(ctx, owner, repo, envName, mappings)
 }
 
-func (r *rateLimitedGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, repoID int, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
+func (r *rateLimitedGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
 	r.ensureRatelimits(ctx)
-	return r.client.CreateOrUpdateEnvVariable(ctx, repoID, envName, eVariable)
+	return r.client.CreateOrUpdateEnvVariable(ctx, owner, repo, envName, eVariable)
 }
 
-func (r *rateLimitedGitHubAPI) DeleteEnvVariable(ctx context.Context, repoID int, envName, name string) (*github.Response, error) {
+func (r *rateLimitedGitHubAPI) DeleteEnvVariable(ctx context.Context, owner, repo, envName, name string) (*github.Response, error) {
 	r.ensureRatelimits(ctx)
-	return r.client.DeleteEnvVariable(ctx, repoID, envName, name)
+	return r.client.DeleteEnvVariable(ctx, owner, repo, envName, name)
 }
 
-func (r *rateLimitedGitHubAPI) ListEnvVariables(ctx context.Context, repoID int, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
+func (r *rateLimitedGitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
 	r.ensureRatelimits(ctx)
-	return r.client.ListEnvVariables(ctx, repoID, envName, opts)
+	return r.client.ListEnvVariables(ctx, owner, repo, envName, opts)
 }
 
 func (r *rateLimitedGitHubAPI) SyncEnvVariables(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
@@ -374,12 +374,12 @@ func (r *retryableGitHubAPI) SyncEnvSecrets(ctx context.Context, owner, repo, en
 	return backoff.Retry(retryFunc, r.backoffOptions)
 }
 
-func (r *retryableGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, repoID int, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
+func (r *retryableGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
 	retryFunc := func() error {
-		resp, err = r.client.CreateOrUpdateEnvVariable(ctx, repoID, envName, eVariable)
+		resp, err = r.client.CreateOrUpdateEnvVariable(ctx, owner, repo, envName, eVariable)
 		return err
 	}
 
@@ -387,12 +387,12 @@ func (r *retryableGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, repo
 	return resp, err
 }
 
-func (r *retryableGitHubAPI) DeleteEnvVariable(ctx context.Context, repoID int, envName, name string) (*github.Response, error) {
+func (r *retryableGitHubAPI) DeleteEnvVariable(ctx context.Context, owner, repo, envName, name string) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
 	retryFunc := func() error {
-		resp, err = r.client.DeleteEnvVariable(ctx, repoID, envName, name)
+		resp, err = r.client.DeleteEnvVariable(ctx, owner, repo, envName, name)
 		return err
 	}
 
@@ -400,13 +400,13 @@ func (r *retryableGitHubAPI) DeleteEnvVariable(ctx context.Context, repoID int, 
 	return resp, err
 }
 
-func (r *retryableGitHubAPI) ListEnvVariables(ctx context.Context, repoID int, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
+func (r *retryableGitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, envName string, opts *github.ListOptions) (*github.ActionsVariables, *github.Response, error) {
 	var secrets *github.ActionsVariables
 	var resp *github.Response
 	var err error
 
 	retryFunc := func() error {
-		secrets, resp, err = r.client.ListEnvVariables(ctx, repoID, envName, opts)
+		secrets, resp, err = r.client.ListEnvVariables(ctx, owner, repo, envName, opts)
 		return err
 	}
 
