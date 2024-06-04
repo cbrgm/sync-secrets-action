@@ -6,7 +6,7 @@ require (
 	github.com/alexflint/go-arg v1.5.0
 	github.com/google/go-github/v62 v62.0.0
 	golang.org/x/crypto v0.23.0
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.21.0
 )
 
 require (
