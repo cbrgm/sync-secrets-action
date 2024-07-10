@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/google/go-github/v62/github"
+	"github.com/google/go-github/v63/github"
 	"golang.org/x/crypto/nacl/box"
 
 	crypto_rand "crypto/rand"
