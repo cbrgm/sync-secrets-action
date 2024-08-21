@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v63/github"
+	"github.com/google/go-github/v64/github"
 )
 
 // GitHubCodespacesSecrets defines the interface for managing GitHub Codespaces secrets.
