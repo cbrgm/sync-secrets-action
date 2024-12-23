@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v67/github"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/google/go-github/v68/github"
 )
 
 // GitHubCodespacesSecrets defines the interface for managing GitHub Codespaces secrets.

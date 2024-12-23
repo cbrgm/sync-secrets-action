@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v67/github"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/google/go-github/v68/github"
 )
 
 // GitHubRepositorySearch for searching GitHub repositories.
