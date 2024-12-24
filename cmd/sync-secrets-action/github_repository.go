@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v67/github"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/google/go-github/v68/github"
 )
 
 // GitHubRepoSecrets for GitHub repository secrets management.
@@ -288,12 +288,12 @@ func (r *retryableGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -301,12 +301,12 @@ func (r *retryableGitHubAPI) DeleteRepoSecret(ctx context.Context, owner, repo, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteRepoSecret(ctx, owner, repo, name)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -315,12 +315,12 @@ func (r *retryableGitHubAPI) GetRepoPublicKey(ctx context.Context, owner, repo s
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		publicKey, resp, err = r.client.GetRepoPublicKey(ctx, owner, repo)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return publicKey, resp, err
 }
 
@@ -329,39 +329,41 @@ func (r *retryableGitHubAPI) ListRepoSecrets(ctx context.Context, owner, repo st
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		secrets, resp, err = r.client.ListRepoSecrets(ctx, owner, repo, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return secrets, resp, err
 }
 
 func (r *retryableGitHubAPI) PutRepoSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutRepoSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutRepoSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) SyncRepoSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncRepoSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncRepoSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateRepoVariable(ctx, owner, repo, variable)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -369,12 +371,12 @@ func (r *retryableGitHubAPI) DeleteRepoVariable(ctx context.Context, owner, repo
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteRepoVariable(ctx, owner, repo, variableName)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -383,25 +385,27 @@ func (r *retryableGitHubAPI) ListRepoVariables(ctx context.Context, owner, repo 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		variables, resp, err = r.client.ListRepoVariables(ctx, owner, repo, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return variables, resp, err
 }
 
 func (r *retryableGitHubAPI) PutRepoVariables(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutRepoVariables(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutRepoVariables(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) SyncRepoVariables(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncRepoVariables(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncRepoVariables(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }

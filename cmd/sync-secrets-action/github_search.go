@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v67/github"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/google/go-github/v68/github"
 )
 
 // GitHubRepositorySearch for searching GitHub repositories.
@@ -57,12 +57,12 @@ func (r *retryableGitHubAPI) SearchRepositories(ctx context.Context, query strin
 	var repos []*github.Repository
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		repos, err = r.client.SearchRepositories(ctx, query)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return repos, err
 }
 

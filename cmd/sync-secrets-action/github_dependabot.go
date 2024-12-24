@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/cenkalti/backoff/v4"
-	"github.com/google/go-github/v67/github"
+	"github.com/cenkalti/backoff/v5"
+	"github.com/google/go-github/v68/github"
 )
 
 // GitHubDependabotSecrets for GitHub Dependabot secrets management.
@@ -162,12 +162,12 @@ func (r *retryableGitHubAPI) GetDependabotPublicKey(ctx context.Context, owner, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		publicKey, resp, err = r.client.GetDependabotPublicKey(ctx, owner, repo)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return publicKey, resp, err
 }
 
@@ -175,12 +175,12 @@ func (r *retryableGitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context,
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateDependabotSecret(ctx, owner, repo, eSecret)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -188,12 +188,12 @@ func (r *retryableGitHubAPI) DeleteDependabotSecret(ctx context.Context, owner, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteDependabotSecret(ctx, owner, repo, name)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -202,25 +202,28 @@ func (r *retryableGitHubAPI) ListDependabotSecrets(ctx context.Context, owner, r
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		secrets, resp, err = r.client.ListDependabotSecrets(ctx, owner, repo, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return secrets, resp, err
 }
 
 func (r *retryableGitHubAPI) SyncDependabotSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncDependabotSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncDependabotSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) PutDependabotSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutDependabotSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutDependabotSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
