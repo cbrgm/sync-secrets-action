@@ -169,12 +169,12 @@ func (r *retryableGitHubAPI) CreateOrUpdateCodespacesSecret(ctx context.Context,
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateCodespacesSecret(ctx, owner, repo, eSecret)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -182,12 +182,12 @@ func (r *retryableGitHubAPI) DeleteCodespacesSecret(ctx context.Context, owner, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteCodespacesSecret(ctx, owner, repo, name)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -196,12 +196,12 @@ func (r *retryableGitHubAPI) GetCodespacesPublicKey(ctx context.Context, owner, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		publicKey, resp, err = r.client.GetCodespacesPublicKey(ctx, owner, repo)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return publicKey, resp, err
 }
 
@@ -210,25 +210,29 @@ func (r *retryableGitHubAPI) ListCodespacesSecrets(ctx context.Context, owner, r
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		secrets, resp, err = r.client.ListCodespacesSecrets(ctx, owner, repo, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return secrets, resp, err
 }
 
 func (r *retryableGitHubAPI) SyncCodespacesSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncCodespacesSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncCodespacesSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) PutCodespacesSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutCodespacesSecrets(ctx, owner, repo, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutCodespacesSecrets(ctx, owner, repo, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }

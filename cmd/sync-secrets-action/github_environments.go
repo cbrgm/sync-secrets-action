@@ -310,12 +310,12 @@ func (r *retryableGitHubAPI) CreateOrUpdateEnvSecret(ctx context.Context, repoID
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateEnvSecret(ctx, repoID, envName, eSecret)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -323,12 +323,12 @@ func (r *retryableGitHubAPI) DeleteEnvSecret(ctx context.Context, repoID int, en
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteEnvSecret(ctx, repoID, envName, name)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -337,12 +337,12 @@ func (r *retryableGitHubAPI) GetEnvPublicKey(ctx context.Context, repoID int, en
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		publicKey, resp, err = r.client.GetEnvPublicKey(ctx, repoID, envName)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return publicKey, resp, err
 }
 
@@ -351,39 +351,41 @@ func (r *retryableGitHubAPI) ListEnvSecrets(ctx context.Context, repoID int, env
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		secrets, resp, err = r.client.ListEnvSecrets(ctx, repoID, envName, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return secrets, resp, err
 }
 
 func (r *retryableGitHubAPI) PutEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutEnvSecrets(ctx, owner, repo, envName, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutEnvSecrets(ctx, owner, repo, envName, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) SyncEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncEnvSecrets(ctx, owner, repo, envName, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncEnvSecrets(ctx, owner, repo, envName, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.CreateOrUpdateEnvVariable(ctx, owner, repo, envName, eVariable)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -391,12 +393,12 @@ func (r *retryableGitHubAPI) DeleteEnvVariable(ctx context.Context, owner, repo,
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		resp, err = r.client.DeleteEnvVariable(ctx, owner, repo, envName, name)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return resp, err
 }
 
@@ -405,25 +407,27 @@ func (r *retryableGitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, 
 	var resp *github.Response
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		secrets, resp, err = r.client.ListEnvVariables(ctx, owner, repo, envName, opts)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return secrets, resp, err
 }
 
 func (r *retryableGitHubAPI) PutEnvVariables(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.PutEnvVariables(ctx, owner, repo, envName, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.PutEnvVariables(ctx, owner, repo, envName, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }
 
 func (r *retryableGitHubAPI) SyncEnvVariables(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {
-	retryFunc := func() error {
-		return r.client.SyncEnvVariables(ctx, owner, repo, envName, mappings)
+	retryFunc := func() (bool, error) {
+		return true, r.client.SyncEnvVariables(ctx, owner, repo, envName, mappings)
 	}
-	return backoff.Retry(retryFunc, r.backoffOptions)
+	_, err := backoff.Retry(ctx, retryFunc, r.backoffOptions...)
+	return err
 }

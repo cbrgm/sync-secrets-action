@@ -79,9 +79,9 @@ func (g *rateLimitedGitHubAPI) waitForRateLimitReset(ctx context.Context) {
 
 		if timeToWait > 0 {
 			log.Printf("%s Waiting for %v", rateLimitedMessage, timeToWait)
-			time.Sleep(timeToWait + time.Second) // Adding a buffer to ensure reset has occurred
+			time.Sleep(timeToWait + time.Second)
 		} else {
-			return // Exit the function once the rate limit has reset
+			return
 		}
 	}
 }
@@ -103,21 +103,17 @@ func (g *rateLimitedGitHubAPI) ensureRatelimits(ctx context.Context) {
 // retryableGitHubAPI is a decorator for GitHubActionClient that adds retry functionality using exponential backoff.
 type retryableGitHubAPI struct {
 	client         GitHubActionClient
-	backoffOptions backoff.BackOff
+	backoffOptions []backoff.RetryOption
 }
 
 func newRetryableGitHubAPI(client GitHubActionClient, maxRetries uint64) GitHubActionClient {
-	backoffOptions := backoff.NewExponentialBackOff()
-	backoffOptions.InitialInterval = 2 * time.Second
-	backoffOptions.RandomizationFactor = backoff.DefaultRandomizationFactor
-	backoffOptions.Multiplier = backoff.DefaultMultiplier
-	backoffOptions.MaxInterval = backoff.DefaultMaxInterval
-	backoffOptions.MaxElapsedTime = backoff.DefaultMaxElapsedTime
-	withMaxTries := backoff.WithMaxRetries(backoffOptions, maxRetries)
-
 	var api GitHubActionClient = &retryableGitHubAPI{
-		client:         client,
-		backoffOptions: withMaxTries,
+		client: client,
+		backoffOptions: []backoff.RetryOption{
+			backoff.WithMaxElapsedTime(backoff.DefaultMaxElapsedTime),
+			backoff.WithMaxTries(uint(maxRetries)),
+			backoff.WithBackOff(backoff.NewExponentialBackOff()),
+		},
 	}
 	return api
 }

@@ -57,12 +57,12 @@ func (r *retryableGitHubAPI) SearchRepositories(ctx context.Context, query strin
 	var repos []*github.Repository
 	var err error
 
-	retryFunc := func() error {
+	retryFunc := func() (bool, error) {
 		repos, err = r.client.SearchRepositories(ctx, query)
-		return err
+		return true, err
 	}
 
-	err = backoff.Retry(retryFunc, r.backoffOptions)
+	_, err = backoff.Retry(ctx, retryFunc, r.backoffOptions...)
 	return repos, err
 }
 
