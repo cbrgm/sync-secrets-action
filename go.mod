@@ -2,7 +2,7 @@ module github.com/cbrgm/sync-secrets-action
 
 go 1.23
 
-toolchain go1.23.5
+toolchain go1.23.6
 
 require (
 	github.com/alexflint/go-arg v1.5.1
