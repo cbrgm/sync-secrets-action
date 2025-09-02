@@ -50,9 +50,17 @@ func (api *gitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, envName
 }
 
 func (api *gitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
-	// todo(cbrgm): This is necessary because there's no CreateOrUpdate, is it missing?
-	_, _ = api.client.Actions.DeleteEnvVariable(ctx, owner, repo, envName, eVariable.Name)
-	return api.client.Actions.CreateEnvVariable(ctx, owner, repo, envName, eVariable)
+	// Try to update the variable first
+	resp, err := api.client.Actions.UpdateEnvVariable(ctx, owner, repo, envName, eVariable)
+	if err != nil {
+		// If update fails (e.g., variable doesn't exist), try to create it
+		createResp, createErr := api.client.Actions.CreateEnvVariable(ctx, owner, repo, envName, eVariable)
+		if createErr != nil {
+			return nil, fmt.Errorf("failed to update environment variable %s in environment %s: %v; failed to create: %v", eVariable.Name, envName, err, createErr)
+		}
+		return createResp, nil
+	}
+	return resp, err
 }
 
 func (api *gitHubAPI) SyncEnvSecrets(ctx context.Context, owner, repo, envName string, mappings map[string]string) error {

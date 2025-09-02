@@ -241,7 +241,7 @@ func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
 		}
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("malformed secret, does not contain a key=value pair: %s", line)
+			return nil, fmt.Errorf("malformed secret, does not contain a key=value pair: %s (note: if you see '***', GitHub Actions may be masking the value - check your input format)", line)
 		}
 		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 		if key == "" || value == "" {
