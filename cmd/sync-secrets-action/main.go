@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"runtime"
@@ -233,6 +234,15 @@ func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
 		return secrets, nil
 	}
 
+	trimmed := strings.TrimSpace(secretsRaw)
+
+	// Auto-detect JSON format: if input starts with '{' and ends with '}', parse as JSON.
+	// This allows multi-line secrets since JSON handles newlines within string values.
+	if strings.HasPrefix(trimmed, "{") && strings.HasSuffix(trimmed, "}") {
+		return parseJSONKeyValuePairs(trimmed)
+	}
+
+	// Standard key-value format: newline-separated KEY=VALUE pairs
 	lines := strings.Split(secretsRaw, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -246,6 +256,30 @@ func parseKeyValuePairs(secretsRaw string) (map[string]string, error) {
 		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 		if key == "" || value == "" {
 			return nil, fmt.Errorf("malformed secret, key or value is empty: %s", line)
+		}
+		secrets[strings.ToUpper(key)] = value
+	}
+	return secrets, nil
+}
+
+// parseJSONKeyValuePairs parses a JSON object where keys are secret names and values are secret values.
+// This format supports multi-line secrets since JSON handles newlines within string values.
+// Keys are converted to uppercase for consistency with the key-value format.
+// Values are preserved exactly as provided in JSON (no trimming), allowing intentional whitespace.
+func parseJSONKeyValuePairs(jsonStr string) (map[string]string, error) {
+	var rawSecrets map[string]string
+	if err := json.Unmarshal([]byte(jsonStr), &rawSecrets); err != nil {
+		return nil, fmt.Errorf("failed to parse JSON secrets: %w", err)
+	}
+
+	secrets := make(map[string]string)
+	for key, value := range rawSecrets {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			return nil, fmt.Errorf("malformed JSON secret: key is empty")
+		}
+		if value == "" {
+			return nil, fmt.Errorf("malformed JSON secret: value is empty for key %s", key)
 		}
 		secrets[strings.ToUpper(key)] = value
 	}
