@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v5"
-	"github.com/google/go-github/v81/github"
+	"github.com/google/go-github/v82/github"
 )
 
 // GitHubRepoSecrets for GitHub repository secrets management.
