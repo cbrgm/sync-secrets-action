@@ -14,6 +14,7 @@
    * [Container Usage](#container-usage)
    * [Usage Examples](#usage-examples)
       + [Syncing Repository Secrets and Variables](#syncing-repository-secrets-and-variables)
+      + [Syncing Multi-Line Secrets](#syncing-multi-line-secrets-certificates-private-keys-etc)
       + [Matrix Build Example - Syncing Across Multiple Repositories](#matrix-build-example-syncing-across-multiple-repositories)
       + [Query Example - Syncing to Repositories by Search Query](#query-example-syncing-to-repositories-by-search-query)
       + [Syncing Environment Secrets](#advanced-usage-syncing-environment-secrets)
@@ -35,8 +36,8 @@
 
 - `github-token`: **Required** - The GitHub token to use. Use GitHub secrets for security.
 - `target`: Optional - The repository to sync secrets and variables to. Either `target` or `query` must be set, but not both.
-- `secrets`: Optional - Secrets to sync. Formatted as a string of newline-separated `KEY=VALUE` pairs.
-- `variables`: Optional - Variables to sync. Formatted as a string of newline-separated `KEY=VALUE` pairs.
+- `secrets`: Optional - Secrets to sync. Supports two formats: newline-separated `KEY=VALUE` pairs (default) or JSON object format for multi-line values.
+- `variables`: Optional - Variables to sync. Supports two formats: newline-separated `KEY=VALUE` pairs (default) or JSON object format for multi-line values.
 - `rate-limit`: Optional - Enables rate limit checking. Set to `true` to enable. Default is `false`.
 - `max-retries`: Optional - Maximum number of retries for operations. Must not be smaller than zero. Default is `3`.
 - `dry-run`: Optional - Dry run mode. If true, no changes will be made. Useful for testing. Default is `false`.
@@ -92,6 +93,45 @@ jobs:
             ANOTHER_VAR=${{ secrets.A_VARIABLE }}
 
 ```
+
+### Syncing Multi-Line Secrets (Certificates, Private Keys, etc.)
+
+For secrets that contain newlines (like certificates, private keys, or SSH keys), use JSON format. The action auto-detects JSON when the input starts with `{` and ends with `}`.
+
+**Important**: Use GitHub's `toJSON()` function to properly escape secret values. This ensures that newlines, quotes, and other special characters are correctly encoded in the JSON.
+
+```yaml
+name: Sync Multi-Line Secrets
+
+on:
+  workflow_dispatch:
+
+jobs:
+  sync-multiline-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync Certificate and Private Key
+        uses: cbrgm/sync-secrets-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          target: 'user/repository'
+          secrets: |
+            {"TLS_CERT": ${{ toJSON(secrets.TLS_CERT) }}, "TLS_KEY": ${{ toJSON(secrets.TLS_KEY) }}}
+```
+
+For a single multi-line secret:
+
+```yaml
+      - name: Sync SSH Key
+        uses: cbrgm/sync-secrets-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          target: 'user/repository'
+          secrets: |
+            {"SSH_PRIVATE_KEY": ${{ toJSON(secrets.SSH_PRIVATE_KEY) }}}
+```
+
+> **Note**: When using JSON format, secret keys are automatically converted to uppercase. Values are preserved exactly as provided, including any whitespace or newlines. The `toJSON()` function properly escapes newlines as `\n` and handles special characters like quotes.
 
 ### Matrix Build Example - Syncing Across Multiple Repositories
 
