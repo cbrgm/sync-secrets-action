@@ -11,7 +11,7 @@ jobs:
         target: ['cbrgm/actions-test']
     steps:
       - name: Sync Secrets to ${{ matrix.target }}
-        uses: cbrgm/sync-secrets-action@f625538fa47f3674ea6f4c57a6b369ebb0ccaddb # main
+        uses: cbrgm/sync-secrets-action@c27b05dbedf0c2d2b222e3a41850ed86d72f0f21 # main
         with:
           github-token: ${{ secrets.BOT_PAT_TOKEN }}
           target: ${{ matrix.target }}
