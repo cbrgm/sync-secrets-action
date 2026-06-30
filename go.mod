@@ -11,7 +11,7 @@ require (
 
 require (
 	github.com/alexflint/go-scalar v1.2.0 // indirect
-	github.com/cenkalti/backoff/v6 v6.0.1
+	github.com/cenkalti/backoff/v7 v7.0.0
 	github.com/google/go-querystring v1.2.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 )
