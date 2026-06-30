@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	"github.com/cenkalti/backoff/v6"
+	"github.com/cenkalti/backoff/v7"
 	"github.com/google/go-github/v88/github"
 )
 
