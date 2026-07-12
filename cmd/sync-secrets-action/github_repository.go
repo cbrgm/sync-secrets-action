@@ -6,12 +6,12 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v7"
-	"github.com/google/go-github/v88/github"
+	"github.com/google/go-github/v89/github"
 )
 
 // GitHubRepoSecrets for GitHub repository secrets management.
 type GitHubRepoSecrets interface {
-	CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error)
+	CreateOrUpdateRepoSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error)
 	DeleteRepoSecret(ctx context.Context, owner, repo, name string) (*github.Response, error)
 	GetRepoPublicKey(ctx context.Context, owner, repo string) (*github.PublicKey, *github.Response, error)
 	ListRepoSecrets(ctx context.Context, owner, repo string, opts *github.ListOptions) (*github.Secrets, *github.Response, error)
@@ -32,8 +32,8 @@ func (api *gitHubAPI) GetRepoPublicKey(ctx context.Context, owner, repo string) 
 	return api.client.Actions.GetRepoPublicKey(ctx, owner, repo)
 }
 
-func (api *gitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
-	return api.client.Actions.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
+func (api *gitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
+	return api.client.Actions.CreateOrUpdateRepoSecret(ctx, owner, repo, name, body)
 }
 
 func (api *gitHubAPI) DeleteRepoSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
@@ -46,7 +46,10 @@ func (api *gitHubAPI) ListRepoSecrets(ctx context.Context, owner, repo string, o
 
 func (api *gitHubAPI) CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error) {
 	_, _ = api.client.Actions.DeleteRepoVariable(ctx, owner, repo, variable.Name)
-	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, variable)
+	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, github.ActionsVariableCreateRequest{
+		Name:  variable.Name,
+		Value: variable.Value,
+	})
 }
 
 func (api *gitHubAPI) DeleteRepoVariable(ctx context.Context, owner, repo, variableName string) (*github.Response, error) {
@@ -135,7 +138,10 @@ func (api *gitHubAPI) PutRepoSecrets(ctx context.Context, owner, repo string, ma
 		if err != nil {
 			return fmt.Errorf("failed to encrypt secret %s: %v", secretName, err)
 		}
-		_, err = api.CreateOrUpdateRepoSecret(ctx, owner, repo, secret)
+		_, err = api.CreateOrUpdateRepoSecret(ctx, owner, repo, secretName, github.SecretRequest{
+			KeyID:          secret.KeyID,
+			EncryptedValue: secret.EncryptedValue,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to update secret %s in repo %s/%s: %v", secretName, owner, repo, err)
 		}
@@ -236,9 +242,9 @@ func (r *rateLimitedGitHubAPI) GetRepoPublicKey(ctx context.Context, owner, repo
 	return r.client.GetRepoPublicKey(ctx, owner, repo)
 }
 
-func (r *rateLimitedGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
+func (r *rateLimitedGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
 	r.ensureRatelimits(ctx)
-	return r.client.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
+	return r.client.CreateOrUpdateRepoSecret(ctx, owner, repo, name, body)
 }
 
 func (r *rateLimitedGitHubAPI) DeleteRepoSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
@@ -284,12 +290,12 @@ func (r *rateLimitedGitHubAPI) SyncRepoVariables(ctx context.Context, owner, rep
 // Retryable
 
 // GitHubRepoSecrets implementations.
-func (r *retryableGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo string, eSecret *github.EncryptedSecret) (*github.Response, error) {
+func (r *retryableGitHubAPI) CreateOrUpdateRepoSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
 	retryFunc := func() (bool, error) {
-		resp, err = r.client.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
+		resp, err = r.client.CreateOrUpdateRepoSecret(ctx, owner, repo, name, body)
 		return true, err
 	}
 
