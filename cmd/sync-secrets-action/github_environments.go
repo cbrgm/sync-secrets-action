@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v7"
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 )
 
 // GitHubEnvSecrets for GitHub environment secrets management.
@@ -51,13 +51,13 @@ func (api *gitHubAPI) ListEnvVariables(ctx context.Context, owner, repo, envName
 
 func (api *gitHubAPI) CreateOrUpdateEnvVariable(ctx context.Context, owner, repo, envName string, eVariable *github.ActionsVariable) (*github.Response, error) {
 	// Try to update the variable first
-	resp, err := api.client.Actions.UpdateEnvVariable(ctx, owner, repo, envName, eVariable.Name, github.ActionsVariableUpdateRequest{
+	resp, err := api.client.Actions.UpdateEnvVariable(ctx, owner, repo, envName, eVariable.Name, github.ActionsUpdateVariableRequest{
 		Name:  &eVariable.Name,
 		Value: &eVariable.Value,
 	})
 	if err != nil {
 		// If update fails (e.g., variable doesn't exist), try to create it
-		createResp, createErr := api.client.Actions.CreateEnvVariable(ctx, owner, repo, envName, github.ActionsVariableCreateRequest{
+		createResp, createErr := api.client.Actions.CreateEnvVariable(ctx, owner, repo, envName, github.ActionsCreateVariableRequest{
 			Name:  eVariable.Name,
 			Value: eVariable.Value,
 		})

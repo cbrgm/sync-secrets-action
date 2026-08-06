@@ -6,7 +6,7 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v7"
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 )
 
 // GitHubRepoSecrets for GitHub repository secrets management.
@@ -46,7 +46,7 @@ func (api *gitHubAPI) ListRepoSecrets(ctx context.Context, owner, repo string, o
 
 func (api *gitHubAPI) CreateOrUpdateRepoVariable(ctx context.Context, owner, repo string, variable *github.ActionsVariable) (*github.Response, error) {
 	_, _ = api.client.Actions.DeleteRepoVariable(ctx, owner, repo, variable.Name)
-	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, github.ActionsVariableCreateRequest{
+	return api.client.Actions.CreateRepoVariable(ctx, owner, repo, github.ActionsCreateVariableRequest{
 		Name:  variable.Name,
 		Value: variable.Value,
 	})

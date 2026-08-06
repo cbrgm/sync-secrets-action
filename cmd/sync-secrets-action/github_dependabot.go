@@ -6,14 +6,14 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v7"
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v90/github"
 )
 
 // GitHubDependabotSecrets for GitHub Dependabot secrets management.
 type GitHubDependabotSecrets interface {
 	PutDependabotSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error
 	GetDependabotPublicKey(ctx context.Context, owner, repo string) (*github.PublicKey, *github.Response, error)
-	CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo string, eSecret *github.DependabotEncryptedSecret) (*github.Response, error)
+	CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error)
 	DeleteDependabotSecret(ctx context.Context, owner, repo, name string) (*github.Response, error)
 	ListDependabotSecrets(ctx context.Context, owner, repo string, opts *github.ListOptions) (*github.Secrets, *github.Response, error)
 	SyncDependabotSecrets(ctx context.Context, owner, repo string, mappings map[string]string) error
@@ -23,8 +23,8 @@ func (api *gitHubAPI) GetDependabotPublicKey(ctx context.Context, owner, repo st
 	return api.client.Dependabot.GetRepoPublicKey(ctx, owner, repo)
 }
 
-func (api *gitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo string, eSecret *github.DependabotEncryptedSecret) (*github.Response, error) {
-	return api.client.Dependabot.CreateOrUpdateRepoSecret(ctx, owner, repo, eSecret)
+func (api *gitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
+	return api.client.Dependabot.CreateOrUpdateRepoSecret(ctx, owner, repo, name, body)
 }
 
 func (api *gitHubAPI) DeleteDependabotSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
@@ -50,12 +50,15 @@ func (api *gitHubAPI) PutDependabotSecrets(ctx context.Context, owner, repo stri
 	}
 
 	for secretName, secretValue := range mappings {
-		encryptedSecret, err := encryptDependabotWithPublicKey(publicKey, secretName, secretValue)
+		encryptedSecret, err := encryptSecretWithPublicKey(publicKey, secretName, secretValue)
 		if err != nil {
 			return err
 		}
 
-		_, err = api.CreateOrUpdateDependabotSecret(ctx, owner, repo, encryptedSecret)
+		_, err = api.CreateOrUpdateDependabotSecret(ctx, owner, repo, secretName, github.SecretRequest{
+			KeyID:          encryptedSecret.KeyID,
+			EncryptedValue: encryptedSecret.EncryptedValue,
+		})
 		if err != nil {
 			return err
 		}
@@ -135,9 +138,9 @@ func (r *rateLimitedGitHubAPI) GetDependabotPublicKey(ctx context.Context, owner
 	return r.client.GetDependabotPublicKey(ctx, owner, repo)
 }
 
-func (r *rateLimitedGitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo string, eSecret *github.DependabotEncryptedSecret) (*github.Response, error) {
+func (r *rateLimitedGitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
 	r.ensureRatelimits(ctx)
-	return r.client.CreateOrUpdateDependabotSecret(ctx, owner, repo, eSecret)
+	return r.client.CreateOrUpdateDependabotSecret(ctx, owner, repo, name, body)
 }
 
 func (r *rateLimitedGitHubAPI) DeleteDependabotSecret(ctx context.Context, owner, repo, name string) (*github.Response, error) {
@@ -171,12 +174,12 @@ func (r *retryableGitHubAPI) GetDependabotPublicKey(ctx context.Context, owner, 
 	return publicKey, resp, err
 }
 
-func (r *retryableGitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo string, eSecret *github.DependabotEncryptedSecret) (*github.Response, error) {
+func (r *retryableGitHubAPI) CreateOrUpdateDependabotSecret(ctx context.Context, owner, repo, name string, body github.SecretRequest) (*github.Response, error) {
 	var resp *github.Response
 	var err error
 
 	retryFunc := func() (bool, error) {
-		resp, err = r.client.CreateOrUpdateDependabotSecret(ctx, owner, repo, eSecret)
+		resp, err = r.client.CreateOrUpdateDependabotSecret(ctx, owner, repo, name, body)
 		return true, err
 	}
 
